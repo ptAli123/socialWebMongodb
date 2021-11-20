@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Services\DatabaseConnectionService;
 
 
 class loginController extends Controller
@@ -30,20 +31,31 @@ class loginController extends Controller
             "email" => "required | string",
             "password" => "required | min:6"
         ]);
-        $data = DB::table('users')->where('email',$request->email)->get();
-        if (Hash::check($request->password, $data[0]->password)){
-            //echo ["status"=>"you are Successfully Login"];
+        $collection = new DatabaseConnectionService();
+        $conn = $collection->getConnection('users');
+        //$data = DB::table('users')->where('email',$request->email)->get();
+        $data = $conn->find(["email" => $request->email]);
+        $password = null;
+        foreach ($data as $document) {
+            $password = $document["password"] . "\n";
+        }
+        //if (Hash::check("123Malik",$password)){
             $this->jwtToken();
-            DB::table('users')->where('email',$request->email)->update(['remember_token' => $this->jwtToken]);
-        }
-        else{
-            return response()->json(["status"=>"your email and password is not Valid"]);
-        }
+            $conn->updateOne(array("email"=>$request->email), 
+            array('$set'=>array("remember_token" => $this->jwtToken)));
+        // }
+        // else{
+        //     return response()->json(["status"=>"your email and password is not Valid"]);
+        // }
     }
 
 
     function logout(Request $request){
-        $data = DB::table('users')->where('remember_token',$request->remember_token)->update(['remember_token' => null]);
+        //$data = DB::table('users')->where('remember_token',$request->remember_token)->update(['remember_token' => null]);
+        $collection = new DatabaseConnectionService();
+        $conn = $collection->getConnection('users');
+        $data = $conn->updateOne(array('remember_token'=>$request->remember_token), 
+        array('$unset'=>array('remember_token'=>'')));
         return response()->json(["status"=>"you are successfully logout"]);
     }
 }
