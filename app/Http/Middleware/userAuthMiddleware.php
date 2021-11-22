@@ -17,15 +17,10 @@ class userAuthMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        //$data = DB::table('users')->where('remember_token',$request->remember_token)->get();
         $collection = new DatabaseConnectionService();
         $conn = $collection->getConnection('users');
-        $data = $conn->find(["remember_token"=>$request->remember_token]);
-        $n = null;
-        foreach($data as $d){
-            $n = $d["name"];
-        }
-        if ($n){
+        $data = $conn->findOne(["remember_token"=>$request->remember_token]);
+        if ($data["email"]){
             echo json_encode(['msg'=>'valid']);
             return $next($request);
         }

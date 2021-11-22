@@ -19,8 +19,6 @@ class signUpController extends Controller
         $conn = $collection->getConnection('users');
 
         $document = array( 
-            // "user_id"=> [$inc =>['user_id' => 1]],
-            "user_id"=> 4,
             "name" => $request->name, 
             "email" => $request->email,
             "password"=> hash::make($request->password),

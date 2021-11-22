@@ -33,25 +33,19 @@ class loginController extends Controller
         ]);
         $collection = new DatabaseConnectionService();
         $conn = $collection->getConnection('users');
-        //$data = DB::table('users')->where('email',$request->email)->get();
-        $data = $conn->find(["email" => $request->email]);
-        $password = null;
-        foreach ($data as $document) {
-            $password = $document["password"] . "\n";
-        }
-        //if (Hash::check("123Malik",$password)){
+        $data = $conn->findOne(["email" => $request->email]);
+        if (Hash::check($request->password,$data["password"])){
             $this->jwtToken();
             $conn->updateOne(array("email"=>$request->email), 
             array('$set'=>array("remember_token" => $this->jwtToken)));
-        // }
-        // else{
-        //     return response()->json(["status"=>"your email and password is not Valid"]);
-        // }
+        }
+        else{
+            return response()->json(["status"=>"your email and password is not Valid"]);
+        }
     }
 
 
     function logout(Request $request){
-        //$data = DB::table('users')->where('remember_token',$request->remember_token)->update(['remember_token' => null]);
         $collection = new DatabaseConnectionService();
         $conn = $collection->getConnection('users');
         $data = $conn->updateOne(array('remember_token'=>$request->remember_token), 

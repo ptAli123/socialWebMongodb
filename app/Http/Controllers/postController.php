@@ -5,54 +5,59 @@ use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\postRequest;
+use App\Services\DatabaseConnectionService;
+
 
 class postController extends Controller
 {
     function post(postRequest $request){
         $request->validated();
-
-        $data = DB::table('users')->where('remember_token',$request->remember_token)->get();
-        // if (count($data) > 0){
     
             $path = $request->file('file')->store('post');
-            $post = new Post();
-            $post->file = $path;
-            $post->access = $request->access;
-            $post->user_id = $data[0]->id;
-            $post->save();
+            
+            $collection = new DatabaseConnectionService();
+            $conn = $collection->getConnection('users');
+            $data = $conn->findOne(["remember_token"=>$request->remember_token]);
+            $document = array( 
+                "user_id" => $data["_id"],
+                "file" => $path,
+                "access" => $request->access,
+                "comments" => []
+             );
+
+            $conn = $collection->getConnection('posts');
+            $conn->insertOne($document);
             return response()->json(['msg' => 'your have post.....']);
-        // }
-        // else{
-        //     return response()->json(['msg' => 'you are not login....']);
-        // }
     }
 
     function postUpdate(postRequest $request){
         $request->validated();
 
-        $data = DB::table('users')->where('remember_token',$request->remember_token)->get();
-        // if (count($data) > 0){
-            
-            $path = $request->file('file')->store('post');
-            DB::table('posts')->where('user_id',$data[0]->id)->where('id',$request->post_id)->update(['file' => $path,'access' => $request->access]);
-            return response()->json(['msg' => 'your have updated post.....']);
-            // }
-        // else{
-        //     echo json_encode(['msg' => 'you are not login']);
-        // }
+        $collection = new DatabaseConnectionService();
+        $conn = $collection->getConnection('users');
+
+        $userId = $conn->findOne(["remember_token" => $request->remember_token]);
+
+        $path = $request->file('file')->store('post');
+        $conn = $collection->getConnection('posts');
+        $id = new \MongoDB\BSON\ObjectId($request->post_id);
+
+
+        $conn->updateOne(array("_id"=>$id,"user_id"=>$userId["_id"]), 
+              array('$set'=>array("file" => $path,"access"=>$request->access)));
+        return response()->json(['msg' => 'your have updated post.....']);
     }
 
     function postDelete(Request $request){
-        $data = DB::table('users')->where('remember_token',$request->remember_token)->get();
-        // if (count($data) > 0){
-            DB::table('comments')->where('post_id',$request->post_id)->delete();
-            DB::table('posts')->where('user_id',$data[0]->id)->where('id',$request->post_id)->delete();
-            echo $data[0]->id.$request->post_id;
-            return response()->json(['msg' => 'your have Deleted post.....']);
-            // }
-        // else{
-        //     echo json_encode(['msg' => 'you are not login']);
-        // }
+        $collection = new DatabaseConnectionService();
+        $conn = $collection->getConnection('users');
+
+        $userId = $conn->findOne(["remember_token" => $request->remember_token]);
+
+        $conn = $collection->getConnection('posts');
+        $id = new \MongoDB\BSON\ObjectId($request->post_id);
+        $conn->deleteOne(array("user_id"=> $userId["_id"],"_id"=>$id));
+        return response()->json(['msg' => 'your have Deleted post.....']);
     }
 
     function checkFriend($user1_id,$user2_id){

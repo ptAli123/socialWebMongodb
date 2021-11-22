@@ -12,7 +12,7 @@ class mailConfirmationController extends Controller
         $collection = new DatabaseConnectionService();
         $conn = $collection->getConnection('users');
         $conn->updateOne(array("email"=>$email,"verify_token"=>(int)$varify_token), 
-              array('$set'=>array("verified_token_at" => 9876)));
-        echo json_encode(['message' => 'you are varified']);
+              array('$set'=>array("email_verified" => 1)));
+        return response()->json(['message' => 'you are varified']);
     }
 }
