@@ -3,59 +3,47 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use App\Services\DatabaseConnectionService;
 
 class listViewController extends Controller
 {
-    function checkFriend($user1_id,$user2_id){
-        $data = DB::table('friends')->where('user1_id',$user1_id)->where('user2_id',$user2_id)->get();
-        if (count($data) > 0){
+    public function checkFriend($conn,$fid){
+        
+        $res = $conn->findOne(["friends.friend_id"=>$fid]);
+        if ($res != null){
             return true;
-        }
+        } 
         else{
             return false;
         }
     }
     public function postList(Request $request){
-        $data = DB::table('users')->where('remember_token',$request->remember_token)->get();
-        // if (count($data) > 0){
-        $postArr = array();
-           $posts = DB::table('posts')->where('access','public')->get();
-           foreach($posts as $post){
-                //echo json_encode(['file' =>$post->file, 'Access'=> $post->access]);
-                $CArr = array();
-                $comments = DB::table('comments')->where('post_id',$post->id)->get();
-                foreach($comments as $comment){
-                    //echo json_encode(['file' =>$comment->file, 'comment'=> $comment->comment]);
-                    
-                    $C = array(['file' =>$comment->file, 'comment'=> $comment->comment]);
-                    $CArr[$comment->id] = $C;
-                }
-                $P = array(['file' =>$post->file, 'Access'=> $post->access],$CArr);
-                $postArr[$post->id] = $P;
-           }
 
-           // private posts
-           $posts = DB::table('posts')->where('access','private')->get();
-           foreach($posts as $post){
-                if ($this->checkFriend($data[0]->id,$post->user_id)){
-                    echo json_encode(['file' =>$post->file, 'Access'=> $post->access]);
-                    $comments = DB::table('comments')->where('post_id',$post->id)->get();
-                    $CArr = array();
-                    foreach($comments as $comment){
-                        //echo json_encode(['file' =>$comment->file, 'comment'=> $comment->comment]);
-                        
-                        $C = array(['file' =>$comment->file, 'comment'=> $comment->comment]);
-                        $CArr[$comment->id] = $C;
-                    }
-                    $P = array(['file' =>$post->file, 'Access'=> $post->access],$CArr);
-                    $postArr[$post->id] = $P;
-                }
-            
-            }
-            return response()->json($postArr);
-        // }
-        // else{
-        //     echo json_encode(['msg' => 'you are not login']);
-        // }
+        $collection = new DatabaseConnectionService();
+        $conn1 = $collection->getConnection('users');
+
+        $conn = $collection->getConnection('posts');
+        $postsArr = null;
+        $posts = $conn->find(['access' => 'public']);
+        $postsArr = json_decode(json_encode($posts->toArray(),true));
+
+
+        //for private posts
+       
+        $privatePosts =$conn->find(['access' => 'private']);
+        
+        $Arr = null;
+        $count = 0;
+        foreach($privatePosts as $post){
+            if (self::checkFriend($conn1,$post->user_id)){
+                $p = $post->_id;
+                $single_post = (array)$post;
+                $Arr[$count++] = $single_post;
+            }  
+        }
+        $AllPosts = null;
+        $AllPosts[0] = $postsArr;
+        $AllPosts[1] = $Arr;
+        return response()->json($AllPosts);
     }
 }

@@ -34,19 +34,3 @@ Route::post('/logout',[loginController::class,'logout'])->middleware("userAuth")
 
 Route::post('/forget-password',[UserForgetPasswordController::class, 'forgetPasword']);
 Route::post('/forget-password-update',[UserForgetPasswordController::class, 'updatePassword']);
-
-
-// Route::post('/post',[postController::class,'post'])->middleware('userAuth');
-// Route::post('/post-update',[postController::class,'postUpdate'])->middleware("userAuth");
-// Route::post('/post-search',[postController::class,'postSearch'])->middleware("userAuth");
-// Route::post('/post-delete',[postController::class,'postDelete'])->middleware("userAuth");
-
-
-// Route::post('/list-view',[listViewController::class,'postList'])->middleware("userAuth");
-
-// Route::post('/comment',[commentController::class,'comment'])->middleware("userAuth");
-// Route::post('/comment-update',[commentController::class,'commentUpdate'])->middleware("userAuth");
-// Route::post('/comment-delete',[commentController::class,'commentDelete'])->middleware("userAuth");
-
-// Route::post('/friend',[friendController::class,'friend'])->middleware("userAuth");
-// Route::post('/friend-remove',[friendController::class,'friendRemove'])->middleware("userAuth");

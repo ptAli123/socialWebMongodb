@@ -60,11 +60,12 @@ class postController extends Controller
         return response()->json(['msg' => 'your have Deleted post.....']);
     }
 
-    function checkFriend($user1_id,$user2_id){
-        $data = DB::table('friends')->where('user1_id',$user1_id)->where('user2_id',$user2_id)->get();
-        if (count($data) > 0){
+    public function checkFriend($conn,$fid){
+        
+        $res = $conn->findOne(["friends.friend_id"=>$fid]);
+        if ($res != null){
             return true;
-        }
+        } 
         else{
             return false;
         }
@@ -72,31 +73,32 @@ class postController extends Controller
 
     function postSearch(Request $request){
 
-        $data = DB::table('users')->where('remember_token',$request->remember_token)->get();
-        $post = DB::table('posts')->where('id',$request->post_id)->get();
-        if ($post[0]->access == 'public'){
-                $CArr = array();
-                $comments = DB::table('comments')->where('post_id',$post[0]->id)->get();
-                foreach($comments as $comment){
-                    
-                    $C = array(['file' =>$comment->file, 'comment'=> $comment->comment]);
-                    $CArr[$comment->id] = $C;
-                }
-                $P = array(['file' =>$post[0]->file, 'Access'=> $post[0]->access],$CArr);
-                return response()->json($P);
-        }
-        else{
-            if ($this->checkFriend($data[0]->id,$post[0]->user_id)){
-                $CArr = array();
-                $comments = DB::table('comments')->where('post_id',$post[0]->id)->get();
-                foreach($comments as $comment){
-                    
-                    $C = array(['file' =>$comment->file, 'comment'=> $comment->comment]);
-                    $CArr[$comment->id] = $C;
-                }
-                $P = array(['file' =>$post[0]->file, 'Access'=> $post[0]->access],$CArr);
-                return response()->json($P);
+        $collection = new DatabaseConnectionService();
+        $conn1 = $collection->getConnection('users');
+        $id = new \MongoDB\BSON\ObjectId($request->post_id);
+        $conn = $collection->getConnection('posts');
+        $FindPost = null;
+        $posts = $conn->find(['access' => 'public']);
+        foreach($posts as $post){
+            if ($id == $post->_id){
+                $FindPost = (array)$post;
             }
         }
+
+
+        //for private posts
+       
+        $privatePosts =$conn->find(['access' => 'private']);
+        
+        $Arr = null;
+        $count = 0;
+        foreach($privatePosts as $post){
+            if (self::checkFriend($conn1,$post->user_id)){
+                if ($id == $post->_id){
+                    $FindPost = (array)$post;
+                }
+            }  
+        }
+        return response()->json($FindPost);
     }
 }
